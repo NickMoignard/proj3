@@ -169,17 +169,17 @@ class OhHellModel():
 if __name__ == "__main__":
 	print('this is a test')
 
+
+
 class TerminalInterface():
 
 	def __init__(self):
-
 
 class Deck(OhHellModel):
 	_cards = ["all 52 cards in random order"]
 	def deal_cards(self):
 	def shuffle_cards(self):
 	def __init__(self):
-
 
 class User(OhHellModel):
 	_name = ""
@@ -448,8 +448,6 @@ class Phase(OhHellModel):
 
 	def __init__(self):
 
-
-
 class Trick(OhHellModeloh):
 	_player_order = itertools.cycle([0, 1, 2, 3])
 
@@ -463,7 +461,6 @@ class Trick(OhHellModeloh):
 	def display_cur_trick(self):
 	
 	def __init__(self):
-
 
 class Game(OhHellModel):
 	
