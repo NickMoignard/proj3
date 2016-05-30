@@ -23,8 +23,8 @@ class Tools_ABC(metaclass=ABCMeta):
 		if isinstance(card, int):
 			raise TypeError('card must be a string')
 
-		card_val = self._value_seq.find(card[0])
-		suit_val = self._suits.find(card[1]) * 13
+		card_val = self._value_seq.find(card[0]) * 4
+		suit_val = self._suits.find(card[1])
 		return  card_val + suit_val
 
 	def int_to_str(self, card):
@@ -36,8 +36,8 @@ class Tools_ABC(metaclass=ABCMeta):
 		"""
 		if isinstance(card, str):
 			raise TypeError('card must be an integer')
-		suit = card // 13
-		value = card % 13
+		suit = card % 4
+		value = card // 4
 		return self._value_seq[value] + self._suits[suit]
 
 	# Abstract Base Methods

@@ -3,9 +3,6 @@ from Tools_ABC import Tools_ABC
 
 class OhHell_Tools(Tools_ABC):
 
-	def __init__(self):
-		pass
-
 	def sort_cards(self, cards, nest=False, trump_suit=None):
 		""" name: sort_cards()
 			synopsis: sort list of cards by ascending value
@@ -30,15 +27,14 @@ class OhHell_Tools(Tools_ABC):
 		# Nest sorted cards by suit regardless of trump suit
 		if nest:
 			cards = [[
-				self.int_to_str(card) for card in cards if card//13 == suit
+				self.int_to_str(card) for card in cards if card%4 == suit
 			] for suit in range(4)]
 
 		# Add sorted trumps to end of flat sorted cards list
 		elif trump_suit is not None:
-			print('entered')
 			tmp_trumps = []
 			for card in cards:
-				if card//13 == self.suit_index(trump_suit):
+				if card % 4 == self.suit_index(trump_suit):
 					card_copy = deepcopy(card)
 					tmp_trumps.append(card_copy)
 				for card in tmp_trumps:
@@ -49,54 +45,88 @@ class OhHell_Tools(Tools_ABC):
 		# Convert cards to strings before returning
 		return cards if nest else [self.int_to_str(card) for card in cards]
 
-	def det_winner(cards, trump_suit, lead_suit, index_return=False):
+	def det_winner(self, cards, lead_suit=None, trump_suit=None):
 		""" name: det_winner()
-
-			synopsis: a helper function that will determine the highest value card
-				for a given situation
-
-			input(s): cards, a list of strings
-				trump_suit, a character
-				lead_suit, a character
-				index_return, an optional arguament which defaults to False. By
-				stipulating true, the index of the winning card from the given
-				list is returned along with the string representation of the
-				winning card
-
+			synopsis: a helper function to determine a winning card
+			input(s): cards, a list of cards
+				trump_suit, char representation of suit
+				lead_suit, char representation of suit
 			output(s): a string representation of the winning card
-				or
-				a 2-tuple containing the winning card and said cards index from
-				input list
 		"""
 
-		# variable initialization
-		trumps, leads = [], []
-		winner = ''
+		trumps, leads = [], []  # empty lists prevent NameErrors
+		cards = self.sort_cards(cards, nest=True)
 
-		# Sort into suits and remove cards from losing suits
-		for i in range(len(cards)):
-			if cards[i][1] == trump_suit:
-				trumps.append(cards[i])
-			elif cards[i][1] == lead_suit:
-				leads.append(cards[i])
+		# determine card heirachy
+		if trump_suit is not None:
+			trumps = deepcopy(cards[self.suit_index(trump_suit)])
+		if lead_suit is not None:
+			leads = deepcopy(cards[self.suit_index(lead_suit)])
 
-		# Sort suits and take the highest value card  as the winner
-		if len(trumps) == 0:
-			leads = sort_cards(leads)
-			winner = leads.pop()
+
+		# return highest value card after checking for hierarchical winners
+		if len(trumps) != 0:
+			trumps = self.sort_cards(trumps)	
+			return trumps.pop()
+		elif len(leads) != 0:
+			leads = self.sort_cards(leads)
+			return leads.pop()
 		else:
-			trumps = sort_cards(trumps)
-			winner = trumps.pop()
-
-		return winner, cards.index(winner) if index_return else winner
+			cards = self.sort_cards(cards)  # flatten
+			return cards.pop()
 
 if __name__ == "__main__":
+	
 	tools = OhHell_Tools()
-	print(tools._suits)
-	print(tools._value_seq)
-	print(tools.suit_index("H"))
-	print(tools.int_to_str(50))
-	print(tools.str_to_int("KH"))
-	print(tools.sort_cards(('AS','AC','0C','KH')))
-	print(tools.sort_cards(('AS','AC','0C','KH'), nest=True))
-	print(tools.sort_cards(('AS','AC','0C','KH'), trump_suit="H"))
+	passed = 0
+
+	if tools._suits == "CSDH":
+		passed += 1
+
+	if tools._value_seq == "234567890JQKA":
+		passed += 1
+
+	if tools.suit_index("D") == 2:
+		passed += 1
+
+	if tools.int_to_str(50) == "AD":
+		passed += 1
+
+	if tools.str_to_int("AH") == 51:
+		passed += 1
+
+	if tools.sort_cards(('5S','AS','0H','2C')) == ['2C', '5S', '0H', 'AS']:
+		passed += 1
+
+	if tools.sort_cards(
+						('AS','AC','0C','KH'), nest=True
+	) == [['0C', 'AC'], ['AS'], [], ['KH']]:
+		passed += 1
+
+	if tools.sort_cards(
+						('AS','AC','0C','KH'), trump_suit="H"
+	) == ['0C', 'AC', 'AS', 'KH']:
+		passed += 1
+
+	if tools.det_winner(('5S','AS','0H','2C')) == "AS":
+		passed += 1
+
+	if tools.det_winner(('5S','AS','0H','2C'), lead_suit="H") == "0H":
+		passed += 1
+
+	if tools.det_winner(('5S','AS','0H','2C'), trump_suit="C") == "2C":
+		passed += 1
+
+	if tools.det_winner(
+						('5S','AS','0H','2C'), lead_suit="H",
+						trump_suit="C"
+	) == "2C":
+		passed += 1
+
+	print('OhHell_Tools: {} of 12 tests passed'.format(passed))
+
+
+
+
+
+
