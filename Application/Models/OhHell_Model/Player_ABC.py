@@ -17,10 +17,11 @@ class Player_ABC(metaclass=ABCMeta):
 		""" name: remove_card_from_hand()
 			synopsis: remove a card from players hand
 			input(s): card, string representation of a card
-			output(s): None
+			output(s): card, string representation of a card
 		"""
 		if card in self._hand:
 			self._hand.remove(card)
+			return card
 		else:
 			raise NameError('{} is not players hand'.format(card))
 
@@ -37,6 +38,9 @@ class Player_ABC(metaclass=ABCMeta):
 			output(s):
 				None
 		"""
+		# _hand must be <type=list>
+		if not isinstance(cards, list):
+			cards = list(cards)
 
 		if new_hand:
 			self._hand = cards

@@ -1,19 +1,14 @@
-from itertools import cycle
+from OhHell_Player_ABC import OhHell_Player_ABC
 from copy import deepcopy
 
 class NPC(OhHell_Player_ABC):
 	
-
 	def __init__(self, player_no):
 		self._name = "NPC_" + str(player_no)
 		self._player_no = player_no
-		self._hand = [[], [], [], []]
+		self._hand = []
 
-	# Public Methods =========================================================
-	def make_play(
-		self, curr_trick, prev_tricks, deck_top, phase_bids, seat
-	):
-
+	def make_play(self, cur_trick, cur_score, deck_top, seat):
 		""" name:play()
 			synopsis: determines the best card to play in a trick for given
 				conditions of a game of 'Oh Hell' that takes parameters:
@@ -21,25 +16,13 @@ class NPC(OhHell_Player_ABC):
 			inputs(s):
 				curr_trick a tuple containing the cards played in the current
 				incomplete trick
-
-				prev_tricks, which takes the form of a tuple of completed
-					tricks for the current phase (each of which is a 4-tuple)
-
-
+				cur_score, 4-tuple, contains the current phase score to
+					determine if player has met a bid
 				deck_top, the top card of the deck, used to determine trumps
 					for the current phase
-
-				phase_bids, a tuple containing the bids of the players for the
-					current phase, in order of player_no
-					(startingfromplayer_no = 0)
-
 				seat, an integer 0-3 inclusive. determines number of plays
 					before players turn
-
-			output(s):
-				a single string conforming to the 'Oh Hell' representation of
-				a playing card or 2-tuple containing the the above string and
-				player_data as defined by parameter 7.
+			output(s): card, a string
 		"""
 		player_no = seat
 		hand = self._hand
@@ -51,19 +34,18 @@ class NPC(OhHell_Player_ABC):
 		if leader:
 			lead_suit, cur_winner = None, None
 		else:
-			lead_suit = curr_trick[0][1]
-			cur_winner = self.det_winner(curr_trick, trump_suit,
+			lead_suit = cur_trick[0][1]
+			cur_winner = self.tools.det_winner(cur_trick, trump_suit,
 				lead_suit)
 
 		# Sort cards in hand
-		playable_cards = self._det_playable(lead_suit)
+		playable_cards = self.det_playable(lead_suit)
 
 		#1 If only one card playbable. must play that card
 		all_plays = deepcopy(playable_cards)
-		all_plays = self.flatten_suits(all_plays, trump_suit)
+		all_plays = self.tools.sort_cards(all_plays, trump_suit=trump_suit)
 		if len(all_plays) == 1:  # 1
-			return self._remove_card_from_hand(all_plays.pop())
-
+			return self.remove_card_from_hand(all_plays.pop())
 
 		winning_cards, losing_cards = self._analyse_plays(
 			cur_winner, playable_cards, trump_suit, lead_suit
@@ -71,13 +53,10 @@ class NPC(OhHell_Player_ABC):
 
 
 		# Determine if bid has been met
-
-		# Note: in score_phase func call bids arguament is 11 for each player,
-		# this stops players from recieving bonus 10 points and returns,
-		# only number of wins
-		score = self._score_phase((11, 11, 11, 11), prev_tricks, deck_top)
-		
-		met_bid = True if score[player_no] == phase_bids[player_no] else False
+		if cur_score[self._player_no] == phase_bids[self._player_no]:
+			met_bid = True
+		else:
+			met_bid = False
 		# Game logic implementation
 		#	 1. Only one option so any other logic is extraneous
 		#	 2. Playing to lose, but as leader must play absolute worst card
@@ -114,9 +93,9 @@ class NPC(OhHell_Player_ABC):
 			play = winning_cards.pop()
 			print('7')
 
-		return self._remove_card_from_hand(play)
+		return self.remove_card_from_hand(play)
 
-	def bid(self, hand, phase_no):
+	def init_bid(self, hand, phase_no):
 		""" name: bid()
 			synopsis: returns a the number of rounds a NPC aims to win for 
 				a given phase
@@ -142,75 +121,7 @@ class NPC(OhHell_Player_ABC):
 
 		return bid
 
-	def _remove_card_from_hand(self, chosen_card):
-		""" name: remove_card_from_hand()
-
-			synopsis: remove a card from a players hand and return it
-
-			input(s): card to be removed, a string. & self
-
-			output(s): the removed card a string
-		"""
-		flat_hand = self.flatten_suits(self._hand)
-		if chosen_card in flat_hand:
-			flat_hand.remove(chosen_card)
-
-		hand = self.sort_and_nest(flat_hand)
-
-		self._hand = hand
-
-		return chosen_card
-
-
-	# Getter Methods =========================================================
-	def get_name(self):
-		return self._name
-
-	def get_player_no(self):
-		return self._player_no
-
-	# Setter Methods =========================================================
-	def set_new_hand(self, list_of_cards):
-		# sort and nest cards
-		self._hand = self.sort_and_nest(list_of_cards)
-
-
-	def set_player_number(self, player_no):
-		self._player_no = player_no
-
-	def set_player_name(self, name):
-		self._name = name
-
-	# Non-Public Methods =====================================================
-	def _det_playable(self, lead_suit):
-		""" name: det_playable()
-
-			synopsis: a helper function which determines the playable cards
-				from within a hand for a given trick
-
-			input(s): hand, a tuple of strings
-				lead_suit, a character
-
-			output(s): a list of lists
-		""" 
-		# sort cards by suit
-		suits = self._suits
-		return_list = [[], [], [], []] # Clubs, Spades, Diamonds, Hearts
-
-		hand = self._hand
-
-		if lead_suit == None or len(hand[self.suit_index(lead_suit)]) == 0:
-			# no leads present so return whole hand sorted
-			return [self.sort_cards(hand[i]) for i in range(4)]
-		else:
-			# leads present so return only the sorted leads 
-			leads = self.sort_cards(hand[self.suit_index(lead_suit)])
-			return_list[self.suit_index(lead_suit)] = leads
-			return return_list
-
-	def _analyse_plays(
-		self, cur_winner, sorted_playable_cards, trump_suit, lead_suit
-	):
+	def _analyse_plays(self, cur_winner, cards, trump_suit, lead_suit):
 		""" name: analyse_plays()
 
 			synopsis: a private helper function which organises a hand into
@@ -218,44 +129,47 @@ class NPC(OhHell_Player_ABC):
 				card value
 
 			input(s): cur_winner, a string - the current leading play
-				sorted_playable_cards, a list of lists
+				cards, a list of strings
 				trump_suit, a character
 				lead_suit, a character
 
 			output(s): a 2-tuple containing lists of strings
 				(winning_plays, losing_plays)
 		"""
-
+		cards_duplicate = deepcopy(cards)
+		nested_cards = self.tools.sort_cards(cards, nest=True)
+		trump_index = self.tools.suit_index(trump_suit)
 
 		winning_plays, losing_plays = [], []
 		all_suits = {0, 1, 2, 3}
-		trump_index = self.suit_index(trump_suit)
-		cards = deepcopy(sorted_playable_cards)
 
 		# determine losing suits and store indexes
 		if cur_winner is not None:
 			the_leader = False
-			lead_index = self.suit_index(lead_suit)
+			lead_index = self.tools.suit_index(lead_suit)
 			win_suits = {lead_index, trump_index}
 			lose_suits = all_suits.difference(win_suits)
 		else:  
 			# Lead player so all cards are both winning and losing
 			the_leader = True
 			lead_index = None
-			lose_suits = all_suits	
+			lose_suits = all_suits
 
 		# use stored indexes to correctly copy lists
 		for i in range(4):
 			if i == lead_index:
-				leads = deepcopy(sorted_playable_cards[i])
+				leads = deepcopy(nested_cards[i])
 
 			if i == trump_index:
-				trumps = deepcopy(sorted_playable_cards[i])
+				trumps = deepcopy(nested_cards[i])
 
 			if i in lose_suits:
-				losing_plays.append(cards[i])
+				losing_plays.append(nested_cards[i])
 
-		losing_plays = self.flatten_suits(losing_plays)
+		losing_plays = self.tools.sort_cards(
+											losing_plays,
+											trump_suit=trump_suit
+		)
 
 		# Sort cards respective to the current leading play
 		if not the_leader:
@@ -263,7 +177,7 @@ class NPC(OhHell_Player_ABC):
 
 			# compare cards against cur_winner and allocate win/ lose
 			for card in cur_win_suit:
-				comparison = self.det_winner(
+				comparison = self.tools.det_winner(
 					[cur_winner, card], trump_suit, lead_suit
 				)
 				if comparison != cur_winner:
@@ -278,28 +192,27 @@ class NPC(OhHell_Player_ABC):
 				losing_plays += leads
 		else: # leader
 
-			winning_plays = self.flatten_suits(
-				sorted_playable_cards, trump_suit
-			)
+			winning_plays = cards_duplicate
 
 
 		return winning_plays, losing_plays
 
 
 if __name__ == "__main__":
-
+	# Perform Tests
 	hand = ('AH', '2D', '3D')
 	prev_tricks = (('QD', '9D', '3S', '0D'), ('KH', '8S', 'AS', 'JS'))
-	deck_top = 'KH'
-	phase_bids = (2, 0, 0, 0)
+	score = (2, 0, 0, 0)
+	deck_top = '2H'
+	phase_bids = (2, 2, 0, 0)
 	seat = 1
 	curr_trick = ('AD',)
 
 	NPC_1 = NPC(1)
-	NPC_1.set_new_hand(hand)
+	NPC_1.update_hand(hand)
 
 	print(NPC_1.get_name())
 	print(NPC_1.get_player_no())
-	print(NPC_1.bid(hand, 3))
-	print(NPC_1.make_play(curr_trick, prev_tricks, deck_top, phase_bids, seat))
+	print(NPC_1.init_bid(hand, 3))
+	print(NPC_1.make_play(curr_trick, score, deck_top, seat))
 	

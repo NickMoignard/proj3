@@ -39,6 +39,7 @@ class OhHell_Player_ABC(Player_ABC, metaclass=ABCMeta):
 			synopsis: determine players bid for a given hand
 		"""
 
+
 if __name__ == "__main__":
 	# Perform Tests
 	passed = 0
@@ -63,12 +64,12 @@ if __name__ == "__main__":
 		passed += 1
 
 	# Test: Determine playable cards with lead suit
-	cards = player.det_playable(lead_suit="D")
+	cards = player.det_playable("D")
 	if cards == ['2D']:
 		passed += 1
 
 	# Test: Determine playable cards without lead suit
-	cards = player.det_playable(lead_suit=None)
+	cards = player.det_playable(None)
 	if cards == ['AS', 'AH', 'AC', '2D']:
 		passed += 1
 
